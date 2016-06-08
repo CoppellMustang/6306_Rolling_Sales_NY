@@ -1,0 +1,96 @@
+---
+title: "2016-0509-6306_Rolling_Sales_Analysis_StatenIsland"
+author: "Manjula Kottegoda"
+date: "June 8, 2016"
+output: 
+  html_document:
+    keep_md: true
+---
+
+***
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Rolling Sales Analysis Staten Island
+
+This is to load and examine the Staten Island Rolling sales data as part of Live Session 04 Assignment for Group 4 (consisting of Gopinath Mavankal, Olasehinde Ogunbeku, Ryan Kelly and Manjula Kottegoda)
+
+
+First we load the data. Raw file and a copy of partially cleansed data in to a master dataframe for analysis. Partial cleansing  steps given in readme.
+
+```{r echo=FALSE, include=FALSE}
+require(plyr) 
+require(gdata)
+library(plyr)
+library(gdata)
+setwd("C:/R_Git_Local/6306_Rolling_Sales_NY/Analysis/Data")
+bk <- read.xls("rollingsales_statenisland.xls",pattern="BOROUGH")
+setwd("C:/R_Git_Local/6306_Rolling_Sales_NY/Analysis/Data") # some how didnt work with out this??
+MstrDF = read.csv("rollingsales_statenisland2.csv")         # Read in partially cleaned  file
+```
+
+Initial views of the data show outliers that cloud the general patterns.
+
+```{r echo=FALSE}
+#head(MstrDF) # Get Summary from the loaded dataframe
+bk$SALE.PRICE.N <- as.numeric(gsub("[^[:digit:]]","", bk$SALE.PRICE))
+#count(is.na(bk$SALE.PRICE.N))
+names(bk) <- tolower(names(bk)) 
+bk$gross.sqft <- as.numeric(gsub("[^[:digit:]]","", bk$gross.square.feet))
+bk$land.sqft <- as.numeric(gsub("[^[:digit:]]","", bk$land.square.feet))
+bk$year.built <- as.numeric(as.character(bk$year.built))
+
+attach(bk)
+hist(sale.price.n,main="Raw data shows outliers causing a significant skew") 
+detach(bk)
+
+```
+
+
+Outliers are more visible in this view from the partially cleansed data file as well. Majority of the population is below the $ 1000/Sqft price point.
+
+```{r  echo=FALSE}
+#summary(MstrDF)
+plot(MstrDF$SALE.PRICE/MstrDF$GROSS.SQUARE.FEET,ylab="Price per Sq ft")
+```
+
+
+Using the Partially cleaned data we do the following analysis for the lower price point.
+
+Figure 2.1 (below) shows all counts where price per square foot is less than $1000. We have omitted high value outliers in this view. The count in the lowest price point 'bucket' shows an abnormal spike. This is because of multiple sub $100 sales. These typically account for transfer of ownership rather than an actual sale. Figure 2.2 shows a more realistic market view on price vs. demand. 
+
+```{r  echo=FALSE}
+perSqft1000 <-MstrDF$SALE.PRICE/MstrDF$GROSS.SQUARE.FEET
+perSqft1000<-perSqft1000[perSqft1000<1000]
+
+hist(perSqft1000,col = "lightcyan",xlab="Price per Square foot",ylab="Sales Count",main="Figure 2.1: Sales distribution for PriceperSqft <  $1000 ",las=1,breaks=100)
+#Arrows(0,0,0,0, lwd=2)
+#abline(v=mean(perSqft1000),col="red",lwd=2)
+hist(perSqft1000,col = "lightcyan",main="Figure 2.2: Sales distribution for PriceperSqft between $100-$600",xlab="Price per Square foot", ylab="Sales Count",xlim=c(100,600),las=1, breaks=100)
+```
+
+As seen in Figure 2.2 median price per square foot in Staten Island for sub 1000 range is $`r  round(median(na.omit(perSqft1000)),2)`. Overall Median price per square foot for entire borough of Staten Island is $`r  round(median(na.omit(MstrDF$SALE.PRICE/MstrDF$GROSS.SQUARE.FEET)),2)`. 
+
+Furthermore the Median sales price for the entire borough of Staten Island is **`r sprintf("$ %3.2f",median(na.omit(MstrDF$SALE.PRICE)))`**.
+
+
+
+The graph below shows the sales by neighborhood. The view below shows the most to least desirable  neighborhoods based on sales.
+
+```{r  echo=FALSE}
+# this code gets the NEIGHBORHOOD counts sorts them by count and plots to show desirability
+HoodCount <- MstrDF$NEIGHBORHOOD
+tblBarhood <- sort(table(HoodCount))
+#tblBarhood
+barplot(tblBarhood,col=hcl(seq(0, 360, length = 50)),horiz=TRUE,las=1,cex.names=0.5, width = 100, space = NULL)
+#plot(table(sort(HoodCount$))
+```
+
+The graph below shows the number of sales for the 12 month period showing the seasonal effects on the market.
+
+```{r  echo=FALSE}
+plot(table(MstrDF$SALE.DATE),ylab="Sale Count") 
+```
+
